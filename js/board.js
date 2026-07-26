@@ -5,11 +5,14 @@ import { EMPTY, FILL, CROSS } from './game.js';
 /**
  * What a stroke paints, given the mark under the finger when it goes down.
  *
- * Pressing on a cell that already carries the mark you are painting normally
- * means "erase it". But strict mode makes a filled cell permanent, so an erase
- * stroke starting there could never remove anything — and since a stroke paints
- * one value throughout, the whole drag would do nothing. Starting on a block you
- * have already coloured means "keep colouring".
+ * Pressing a cell that already carries the mark you are painting means "erase
+ * it" — that is how a stray mark gets removed. But a stroke paints one value
+ * throughout, so if the finger then moves, that reading is wrong: starting a
+ * drag on your own block means "keep going from here", not "wipe it out". A tap
+ * toggles, a drag paints; see upgradeStroke below.
+ *
+ * Strict mode never even starts an erase for fill, since a filled cell is
+ * permanent there and the stroke would be a no-op from the first cell.
  */
 export function strokePaint(mode, current, strict) {
   if (mode === 'fill') return current === FILL && !strict ? EMPTY : FILL;
@@ -235,6 +238,7 @@ export class BoardView {
     const paint = strokePaint(mode, this.game.marks[i], this.settings.strict);
     this.stroke = {
       paint,
+      additive: mode === 'fill' ? FILL : CROSS, // what an erase upgrades to once the finger moves
       startR: p.r,
       startC: p.c,
       lastR: p.r,
@@ -270,6 +274,7 @@ export class BoardView {
     if (s.axis === 'row') r = s.startR;
     else if (s.axis === 'col') c = s.startC;
     if (r === s.lastR && c === s.lastC) return;
+    if (s.paint === EMPTY) this.upgradeStroke();
     // fill in every cell between the last position and this one
     const stepR = Math.sign(r - s.lastR);
     const stepC = Math.sign(c - s.lastC);
@@ -283,6 +288,21 @@ export class BoardView {
     s.lastR = r;
     s.lastC = c;
     this.setCrosshair(r, c);
+  }
+
+  /**
+   * The finger moved, so this was never an erase: turn the stroke into a
+   * painting one and put back the mark the initial press rubbed out.
+   */
+  upgradeStroke() {
+    const s = this.stroke;
+    s.paint = s.additive;
+    // Restoring your own mark asserts nothing new, so it must neither cost a
+    // life nor spend the stroke's single penalty — that belongs to the first
+    // cell the drag actually claims.
+    const rec = this.game.set(s.startR * this.size + s.startC, s.additive, { penalize: false });
+    if (rec && !rec.blocked) s.records.push(rec);
+    s.first = true;
   }
 
   apply(r, c) {
