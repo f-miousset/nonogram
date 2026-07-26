@@ -2,6 +2,20 @@
 
 import { EMPTY, FILL, CROSS } from './game.js';
 
+/**
+ * What a stroke paints, given the mark under the finger when it goes down.
+ *
+ * Pressing on a cell that already carries the mark you are painting normally
+ * means "erase it". But strict mode makes a filled cell permanent, so an erase
+ * stroke starting there could never remove anything — and since a stroke paints
+ * one value throughout, the whole drag would do nothing. Starting on a block you
+ * have already coloured means "keep colouring".
+ */
+export function strokePaint(mode, current, strict) {
+  if (mode === 'fill') return current === FILL && !strict ? EMPTY : FILL;
+  return current === CROSS ? EMPTY : CROSS;
+}
+
 const NUM_W = 0.74; // width of a clue number, in cell units
 const MIN_CELL = 13;
 const MAX_CELL = 54;
@@ -218,10 +232,7 @@ export class BoardView {
     const secondary = e.button === 2 || e.ctrlKey;
     const mode = secondary ? (this.mode === 'fill' ? 'cross' : 'fill') : this.mode;
     const i = p.r * this.size + p.c;
-    const cur = this.game.marks[i];
-    let paint;
-    if (mode === 'fill') paint = cur === FILL ? EMPTY : FILL;
-    else paint = cur === CROSS ? EMPTY : CROSS;
+    const paint = strokePaint(mode, this.game.marks[i], this.settings.strict);
     this.stroke = {
       paint,
       startR: p.r,
@@ -279,14 +290,17 @@ export class BoardView {
     if (s.halted) return;
     const i = r * this.size + c;
     const rec = this.game.set(i, s.paint, { penalize: s.first || !this.settings.forgivingDrags });
+    // Gliding over cells that cannot change — the block you started from — is
+    // not yet the deliberate press, so it must not spend its one penalty.
+    if (!rec) return;
     s.first = false;
-    if (rec && rec.blocked) {
+    if (rec.blocked) {
       // Starting a stroke on top of a cross should not swallow the whole drag —
       // glide off it. Running into one part-way through does stop the run.
       if (!(rec.wall && s.records.length === 0)) s.halted = true;
       return;
     }
-    if (rec) s.records.push(rec);
+    s.records.push(rec);
   }
 
   onUp(e) {
