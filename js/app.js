@@ -235,6 +235,7 @@ function screenHelp() {
           <li>Tap a cell to fill it. Drag to paint a whole run.</li>
           <li>Switch the toolbar toggle to <b>✕</b> to mark cells you know are empty. On a desktop, right-click does the same thing.</li>
           <li>Drags lock to a single row or column, so long runs stay straight. Only the cell you press down on can cost a life — if the drag runs past where it should stop, it simply stops, no penalty.</li>
+          <li>A cell you have crossed acts as a wall: painting over it never costs a life, it just halts the stroke. Erase the cross first if you want the cell back.</li>
           <li>Clue numbers grey out one by one as you pin their block down from either end of the line.</li>
           <li>Undo takes back your last stroke. A hint reveals one cell and adds 30 seconds.</li>
           <li>Keyboard: <b>X</b> switches mode, <b>Z</b> undoes, <b>H</b> hints, <b>+</b> and <b>−</b> zoom.</li>

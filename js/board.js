@@ -283,7 +283,9 @@ export class BoardView {
     const rec = this.game.set(i, s.paint, { penalize: s.first || !this.settings.forgivingDrags });
     s.first = false;
     if (rec && rec.blocked) {
-      s.halted = true;
+      // Starting a stroke on top of a cross should not swallow the whole drag —
+      // glide off it. Running into one part-way through does stop the run.
+      if (!(rec.wall && s.records.length === 0)) s.halted = true;
       return;
     }
     if (rec) s.records.push(rec);

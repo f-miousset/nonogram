@@ -68,8 +68,12 @@ export class Game {
 
     if (this.settings.strict) {
       // In strict mode a filled cell is always correct, so it is permanent.
-      // Crosses stay erasable.
       if (from === FILL) return null;
+      // A cross can only sit on a genuinely empty cell here — crossing a filled
+      // one is caught the moment it happens. So painting over your own cross is
+      // never news, and must never cost a life: the cross is a wall the stroke
+      // stops at. Erasing it (cross mode again) still works.
+      if (from === CROSS && want === FILL) return { blocked: true, wall: true };
       const wrong = (want === FILL && truth === 0) || (want === CROSS && truth === 1);
       if (wrong && !penalize) return { blocked: true };
       if (wrong) {
