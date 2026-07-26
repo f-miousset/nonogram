@@ -1,0 +1,13 @@
+{
+  "name": "nonogram",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline-first nonogram (picture cross) PWA — no build step, no dependencies.",
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8123",
+    "verify": "node tools/verify.mjs",
+    "icons": "node tools/make-icons.mjs"
+  },
+  "license": "MIT"
+}
