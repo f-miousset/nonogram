@@ -3,12 +3,13 @@
 const KEY = 'nonogram.v1';
 
 const DEFAULT_SETTINGS = {
-  strict: true,      // mistakes are punished, filled cells are always correct
-  lives: 3,
-  autoCross: true,   // auto-cross a line once its clues are satisfied
-  crosshair: true,   // highlight the active row/column
+  strict: true,          // mistakes are punished, filled cells are always correct
+  lives: 3,              // 0 = unlimited
+  forgivingDrags: true,  // only the cell a stroke starts on can cost a life
+  autoCross: true,       // auto-cross a line once its clues are satisfied
+  crosshair: true,       // highlight the active row/column
   vibrate: true,
-  theme: 'auto',     // auto | light | dark
+  theme: 'auto',         // auto | light | dark
 };
 
 const empty = () => ({ settings: { ...DEFAULT_SETTINGS }, progress: {}, saves: {}, stats: { solved: 0, time: 0 } });

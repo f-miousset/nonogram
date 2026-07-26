@@ -3,6 +3,7 @@
 import { PACKS, ART, getPuzzle, levelId, dailyId, todayKey, packBySize } from './puzzles.js';
 import { Game, formatTime } from './game.js';
 import { BoardView } from './board.js';
+import { hapticsAvailable } from './haptics.js';
 import * as store from './storage.js';
 
 const app = document.getElementById('app');
@@ -239,7 +240,7 @@ function screenHelp() {
           <li>Keyboard: <b>X</b> switches mode, <b>Z</b> undoes, <b>H</b> hints, <b>+</b> and <b>−</b> zoom.</li>
         </ul>
         <h3>Mistakes</h3>
-        <p>In the default <b>strict mode</b> a wrong mark costs a life and the true cell is revealed. Lose three and the puzzle restarts. Turn strict mode off in settings if you would rather play without the pressure — you can then erase anything and check the result yourself.</p>
+        <p>In the default <b>strict mode</b> a wrong mark costs a life and the true cell is revealed. Run out of lives and the puzzle restarts. Settings let you play with one, three or five lives, or unlimited — and turning strict mode off drops mistakes entirely, so you can erase anything and check the result yourself.</p>
         <h3>No guessing</h3>
         <p>Every puzzle here is verified to be solvable by logic alone before it is handed to you. If you are stuck, there is always a line you can reason about.</p>
       </div>
@@ -247,12 +248,25 @@ function screenHelp() {
 }
 
 function screenSettings() {
-  const rows = [
-    ['strict', 'Strict mode', 'Wrong marks cost a life and reveal the cell'],
-    ['autoCross', 'Auto-cross finished lines', 'Cross off the rest of a line once its clues are met'],
-    ['crosshair', 'Row & column highlight', 'Highlight the line you are pointing at'],
-    ['vibrate', 'Vibrate on mistakes', 'Short buzz on supported devices'],
-  ];
+  const toggle = (key, label, hintText) => html`
+    <label class="setting">
+      <span><b>${label}</b><small>${hintText}</small></span>
+      <input type="checkbox" data-key="${key}" ${settings[key] ? 'checked' : ''}>
+      <i class="switch"></i>
+    </label>`;
+
+  const choice = (key, label, hintText, options) => html`
+    <div class="setting">
+      <span><b>${label}</b><small>${hintText}</small></span>
+      <select data-choice="${key}">
+        ${options.map(([value, text]) => `<option value="${value}" ${String(settings[key]) === String(value) ? 'selected' : ''}>${text}</option>`).join('')}
+      </select>
+    </div>`;
+
+  const hapticNote = hapticsAvailable()
+    ? 'Short buzz when a mark is wrong'
+    : 'This device gives web apps no way to buzz';
+
   const el = node(html`
     <div class="screen text-screen">
       <header class="bar">
@@ -261,18 +275,17 @@ function screenSettings() {
         <span class="icon-btn ghost"></span>
       </header>
       <div class="settings">
-        ${rows.map(([key, label, hintText]) => html`
-          <label class="setting">
-            <span><b>${label}</b><small>${hintText}</small></span>
-            <input type="checkbox" data-key="${key}" ${settings[key] ? 'checked' : ''}>
-            <i class="switch"></i>
-          </label>`).join('')}
-        <div class="setting">
-          <span><b>Theme</b><small>Follows your system by default</small></span>
-          <select id="theme">
-            ${['auto', 'light', 'dark'].map((t) => `<option value="${t}" ${settings.theme === t ? 'selected' : ''}>${t[0].toUpperCase() + t.slice(1)}</option>`).join('')}
-          </select>
-        </div>
+        ${toggle('strict', 'Strict mode', 'Wrong marks cost a life and reveal the cell')}
+        ${choice('lives', 'Lives', 'How many wrong marks a puzzle survives', [
+          [1, 'One'], [3, 'Three'], [5, 'Five'], [0, 'Unlimited'],
+        ])}
+        ${toggle('forgivingDrags', 'Forgiving drags', 'A drag that runs too far just stops, instead of costing a life')}
+        ${toggle('autoCross', 'Auto-cross finished lines', 'Cross off the rest of a line once its clues are met')}
+        ${toggle('crosshair', 'Row & column highlight', 'Highlight the line you are pointing at')}
+        ${toggle('vibrate', 'Buzz on mistakes', hapticNote)}
+        ${choice('theme', 'Theme', 'Follows your system by default', [
+          ['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark'],
+        ])}
         <button class="btn danger wide" id="reset">Reset all progress</button>
         <p class="muted small center">Everything is stored on this device only.</p>
       </div>
@@ -284,11 +297,15 @@ function screenSettings() {
       store.setSetting(input.dataset.key, input.checked);
     })
   );
-  el.querySelector('#theme').addEventListener('change', (e) => {
-    settings.theme = e.target.value;
-    store.setSetting('theme', e.target.value);
-    applyTheme();
-  });
+  el.querySelectorAll('select[data-choice]').forEach((select) =>
+    select.addEventListener('change', () => {
+      const key = select.dataset.choice;
+      const value = key === 'theme' ? select.value : Number(select.value);
+      settings[key] = value;
+      store.setSetting(key, value);
+      if (key === 'theme') applyTheme();
+    })
+  );
   el.querySelector('#reset').addEventListener('click', () => {
     showOverlay(html`
       <div class="sheet">
@@ -362,6 +379,9 @@ function screenGame(id) {
       const left = Math.max(0, settings.lives - game.mistakes);
       livesEl.innerHTML = Array.from({ length: settings.lives }, (_, i) =>
         `<i class="heart ${i < left ? '' : 'lost'}"></i>`).join('');
+    } else if (settings.strict) {
+      // Unlimited lives: still worth knowing how many you have got wrong.
+      livesEl.innerHTML = `<span class="miss">✕ ${game.mistakes}</span>`;
     } else {
       livesEl.innerHTML = '';
     }
@@ -514,7 +534,7 @@ function showLost(id, game, view) {
   showOverlay(html`
     <div class="sheet">
       <h2>Out of lives</h2>
-      <p class="muted">Three wrong marks. Take another run at it — the picture stays the same.</p>
+      <p class="muted">${game.mistakes === 1 ? 'One wrong mark' : `${game.mistakes} wrong marks`}. Take another run at it — the picture stays the same.</p>
       <button class="btn primary wide" id="retry">Try again</button>
       <button class="btn ghost wide" id="leave">Back to levels</button>
     </div>`,

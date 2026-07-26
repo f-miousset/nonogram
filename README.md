@@ -25,10 +25,12 @@ To install it as an app, use "Install" / "Add to Home Screen" in the browser.
   beyond that is generated on the fly from the level id, so 130 levels cost no storage.
 - **Every puzzle is fair.** Generated grids are accepted only if a line solver can finish
   them with no guessing, and the hand-drawn ones are checked by `npm run verify`.
-- **Strict mode** (default, like the original): a wrong mark costs one of three lives and
-  reveals the true cell. Turn it off in settings for a relaxed, fully erasable board.
-- **Forgiving drags.** Only the cell you press down on can cost a life; if the drag runs
-  past where it should stop, it just stops. Overshooting with a clumsy finger is free.
+- **Strict mode** (default, like the original): a wrong mark costs a life and reveals the
+  true cell. Lives are settable to one, three, five or unlimited, and strict mode can be
+  turned off entirely for a relaxed, fully erasable board.
+- **Forgiving drags** (settings toggle, on by default). Only the cell you press down on can
+  cost a life; if the drag runs past where it should stop, it just stops. Overshooting with
+  a clumsy finger is free. Turn it off to have every cell a drag touches count.
 - **Per-number clue dimming.** Each number greys out as soon as its block is pinned down
   from either end of the line — computed from your marks and the printed clues alone, so
   it can never hand you a deduction you had not already made.
@@ -45,6 +47,7 @@ To install it as an app, use "Install" / "Add to Home Screen" in the browser.
 | `js/board.js` | Board DOM, sizing, pointer input |
 | `js/app.js` | Screens and routing |
 | `js/storage.js` | localStorage: settings, progress, saved boards |
+| `js/haptics.js` | Mistake buzz, including the iOS 17.4+ workaround |
 | `sw.js` | Precaches every asset; cache-first with background refresh |
 
 ### The solver

@@ -1,7 +1,7 @@
 // Precache everything. The app has no network dependency at all, so the cache
 // is the app: serve from it first, refresh it in the background.
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = `nonogram-${VERSION}`;
 
 const ASSETS = [
@@ -12,6 +12,7 @@ const ASSETS = [
   'js/app.js',
   'js/board.js',
   'js/game.js',
+  'js/haptics.js',
   'js/nonogram.js',
   'js/puzzles.js',
   'js/rng.js',

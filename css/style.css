@@ -246,6 +246,7 @@ header.bar {
 .lives { display: flex; gap: 3px; }
 .heart { display: block; width: 13px; height: 13px; background: var(--danger); clip-path: path('M6.5 12S0 8.2 0 4.2A3.4 3.4 0 016.5 2.6 3.4 3.4 0 0113 4.2C13 8.2 6.5 12 6.5 12z'); }
 .heart.lost { background: var(--line); }
+.miss { font-size: 13px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 .board-area { flex: 1; min-height: 0; overflow: auto; display: grid; place-items: center; padding: 6px; }
 
