@@ -4,7 +4,7 @@
   "description": "Offline nonogram (picture cross / griddler) puzzles with endless generated levels.",
   "start_url": "./",
   "scope": "./",
-  "id": "/nonogram/",
+  "id": "./",
   "display": "standalone",
   "display_override": ["standalone", "fullscreen"],
   "orientation": "any",
