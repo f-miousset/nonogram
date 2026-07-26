@@ -1,7 +1,6 @@
 // Board rendering and pointer input (tap, drag-paint with axis lock, zoom).
 
 import { EMPTY, FILL, CROSS } from './game.js';
-import { buzz } from './haptics.js';
 
 const NUM_W = 0.74; // width of a clue number, in cell units
 const MIN_CELL = 13;
@@ -180,7 +179,6 @@ export class BoardView {
       el.classList.remove('wrong');
       void el.offsetWidth;
       el.classList.add('wrong');
-      if (this.settings.vibrate) buzz(60);
     } else if (e.type === 'hint') {
       const el = this.cellEls[e.index];
       el.classList.remove('hinted');

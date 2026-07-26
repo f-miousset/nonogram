@@ -3,7 +3,6 @@
 import { PACKS, ART, getPuzzle, levelId, dailyId, todayKey, packBySize } from './puzzles.js';
 import { Game, formatTime } from './game.js';
 import { BoardView } from './board.js';
-import { hapticsAvailable } from './haptics.js';
 import * as store from './storage.js';
 
 const app = document.getElementById('app');
@@ -264,10 +263,6 @@ function screenSettings() {
       </select>
     </div>`;
 
-  const hapticNote = hapticsAvailable()
-    ? 'Short buzz when a mark is wrong'
-    : 'This device gives web apps no way to buzz';
-
   const el = node(html`
     <div class="screen text-screen">
       <header class="bar">
@@ -283,7 +278,6 @@ function screenSettings() {
         ${toggle('forgivingDrags', 'Forgiving drags', 'A drag that runs too far just stops, instead of costing a life')}
         ${toggle('autoCross', 'Auto-cross finished lines', 'Cross off the rest of a line once its clues are met')}
         ${toggle('crosshair', 'Row & column highlight', 'Highlight the line you are pointing at')}
-        ${toggle('vibrate', 'Buzz on mistakes', hapticNote)}
         ${choice('theme', 'Theme', 'Follows your system by default', [
           ['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark'],
         ])}

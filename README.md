@@ -47,7 +47,6 @@ To install it as an app, use "Install" / "Add to Home Screen" in the browser.
 | `js/board.js` | Board DOM, sizing, pointer input |
 | `js/app.js` | Screens and routing |
 | `js/storage.js` | localStorage: settings, progress, saved boards |
-| `js/haptics.js` | Mistake buzz, including the iOS 17.4+ workaround |
 | `sw.js` | Precaches every asset; cache-first with background refresh |
 
 ### The solver

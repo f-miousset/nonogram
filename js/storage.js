@@ -8,7 +8,6 @@ const DEFAULT_SETTINGS = {
   forgivingDrags: true,  // only the cell a stroke starts on can cost a life
   autoCross: true,       // auto-cross a line once its clues are satisfied
   crosshair: true,       // highlight the active row/column
-  vibrate: true,
   theme: 'auto',         // auto | light | dark
 };
 
