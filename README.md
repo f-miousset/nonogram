@@ -27,8 +27,13 @@ To install it as an app, use "Install" / "Add to Home Screen" in the browser.
   them with no guessing, and the hand-drawn ones are checked by `npm run verify`.
 - **Strict mode** (default, like the original): a wrong mark costs one of three lives and
   reveals the true cell. Turn it off in settings for a relaxed, fully erasable board.
-- Drag-to-paint with row/column axis lock, auto-cross of finished lines, satisfied-clue
-  dimming, crosshair highlight, undo, hints, zoom, best times, autosave, light/dark theme.
+- **Forgiving drags.** Only the cell you press down on can cost a life; if the drag runs
+  past where it should stop, it just stops. Overshooting with a clumsy finger is free.
+- **Per-number clue dimming.** Each number greys out as soon as its block is pinned down
+  from either end of the line — computed from your marks and the printed clues alone, so
+  it can never hand you a deduction you had not already made.
+- Drag-to-paint with row/column axis lock, auto-cross of finished lines, crosshair
+  highlight, undo, hints, zoom, best times, autosave, light/dark theme.
 
 ## How it works
 

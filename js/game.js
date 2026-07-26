@@ -19,6 +19,10 @@ export class Game {
     this.history = [];
     this.rowDone = new Uint8Array(this.size);
     this.colDone = new Uint8Array(this.size);
+    // Per-number "this block is nailed down" flags, derived only from the
+    // player's own marks — they never peek at the solution.
+    this.rowClueDone = puzzle.rows.map((clue) => new Uint8Array(clue.length));
+    this.colClueDone = puzzle.cols.map((clue) => new Uint8Array(clue.length));
     this.listeners = new Set();
 
     if (saved && saved.marks) {
@@ -51,9 +55,12 @@ export class Game {
 
   /**
    * Apply one cell action. `want` is the mark the stroke is painting.
-   * Returns a change record, or null when nothing happened.
+   * With `penalize: false` a wrong mark is refused instead of costing a life —
+   * that is what a finger overshooting the end of a drag deserves. The caller
+   * gets `{ blocked: true }` back so it can stop the stroke there.
+   * Returns a change record, `{ blocked: true }`, or null when nothing happened.
    */
-  set(i, want) {
+  set(i, want, { penalize = true } = {}) {
     if (this.status !== 'playing') return null;
     const from = this.marks[i];
     if (from === want) return null;
@@ -64,6 +71,7 @@ export class Game {
       // Crosses stay erasable.
       if (from === FILL) return null;
       const wrong = (want === FILL && truth === 0) || (want === CROSS && truth === 1);
+      if (wrong && !penalize) return { blocked: true };
       if (wrong) {
         this.marks[i] = truth === 1 ? FILL : CROSS; // reveal the truth
         this.mistakes++;
@@ -85,38 +93,36 @@ export class Game {
   }
 
   afterChange(records) {
-    const touched = new Set();
-    for (const rec of records) {
-      touched.add('r' + Math.floor(rec.i / this.size));
-      touched.add('c' + (rec.i % this.size));
-    }
-    const auto = [];
-    for (const key of touched) {
-      const n = Number(key.slice(1));
-      if (key[0] === 'r') {
-        const wasDone = this.rowDone[n];
-        this.rowDone[n] = this.lineSatisfied(n, true) ? 1 : 0;
-        if (this.rowDone[n] && !wasDone && this.settings.autoCross) auto.push(...this.crossRest(n, true));
-      } else {
-        const wasDone = this.colDone[n];
-        this.colDone[n] = this.lineSatisfied(n, false) ? 1 : 0;
-        if (this.colDone[n] && !wasDone && this.settings.autoCross) auto.push(...this.crossRest(n, false));
+    const rows = new Set();
+    const cols = new Set();
+    const note = (list) => {
+      for (const rec of list) {
+        rows.add(Math.floor(rec.i / this.size));
+        cols.add(rec.i % this.size);
       }
+    };
+    note(records);
+
+    const auto = [];
+    for (const r of rows) {
+      const wasDone = this.rowDone[r];
+      this.rowDone[r] = this.lineSatisfied(r, true) ? 1 : 0;
+      if (this.rowDone[r] && !wasDone && this.settings.autoCross) auto.push(...this.crossRest(r, true));
+    }
+    for (const c of cols) {
+      const wasDone = this.colDone[c];
+      this.colDone[c] = this.lineSatisfied(c, false) ? 1 : 0;
+      if (this.colDone[c] && !wasDone && this.settings.autoCross) auto.push(...this.crossRest(c, false));
     }
     if (auto.length) {
       // auto-crossing can complete the perpendicular lines too
-      const more = new Set();
-      for (const rec of auto) {
-        more.add('r' + Math.floor(rec.i / this.size));
-        more.add('c' + (rec.i % this.size));
-      }
-      for (const key of more) {
-        const n = Number(key.slice(1));
-        if (key[0] === 'r') this.rowDone[n] = this.lineSatisfied(n, true) ? 1 : 0;
-        else this.colDone[n] = this.lineSatisfied(n, false) ? 1 : 0;
-      }
+      note(auto);
+      for (const r of rows) this.rowDone[r] = this.lineSatisfied(r, true) ? 1 : 0;
+      for (const c of cols) this.colDone[c] = this.lineSatisfied(c, false) ? 1 : 0;
       records.push(...auto);
     }
+    for (const r of rows) this.clueProgress(r, true);
+    for (const c of cols) this.clueProgress(c, false);
     this.emit({ type: 'cells', records });
     if (this.status === 'playing' && this.isSolved()) {
       this.status = 'won';
@@ -134,6 +140,65 @@ export class Game {
       }
     }
     return out;
+  }
+
+  markAt(n, k, isRow) {
+    return this.marks[isRow ? n * this.size + k : k * this.size + n];
+  }
+
+  /**
+   * Work out which individual clue numbers the player has already pinned down,
+   * so they can be greyed out.
+   *
+   * A number counts as done only when it is forced by what is already on the
+   * board: everything from that end of the line up to and including its block
+   * is marked, and the block is closed by a cross or the edge. That is a
+   * deduction the player has already made, so greying it reveals nothing they
+   * could not read off the grid themselves — the solution is never consulted.
+   */
+  clueProgress(n, isRow) {
+    const clue = isRow ? this.puzzle.rows[n] : this.puzzle.cols[n];
+    const flags = isRow ? this.rowClueDone[n] : this.colClueDone[n];
+    flags.fill(0);
+    const size = this.size;
+    const at = (k) => this.markAt(n, k, isRow);
+
+    if (clue.length === 1 && clue[0] === 0) {
+      let all = true;
+      for (let k = 0; k < size && all; k++) if (at(k) !== CROSS) all = false;
+      flags[0] = all ? 1 : 0;
+      return;
+    }
+
+    // Sweep in from the left: with every cell before it settled, the first run
+    // can only be the first clue. If it already measures that clue it is done —
+    // one more cell would overshoot the number the player can read.
+    let head = 0;
+    let i = 0;
+    while (i < size && head < clue.length) {
+      const m = at(i);
+      if (m === EMPTY) break;
+      if (m === CROSS) { i++; continue; }
+      let len = 0;
+      while (i < size && at(i) === FILL) { len++; i++; }
+      if (len !== clue[head]) break; // still growing, or the player has it wrong
+      flags[head++] = 1;
+      if (i < size && at(i) === EMPTY) break; // past here nothing is settled yet
+    }
+
+    // And in from the right, without claiming a number the left sweep took.
+    let tail = clue.length - 1;
+    let j = size - 1;
+    while (j >= 0 && tail >= head) {
+      const m = at(j);
+      if (m === EMPTY) break;
+      if (m === CROSS) { j--; continue; }
+      let len = 0;
+      while (j >= 0 && at(j) === FILL) { len++; j--; }
+      if (len !== clue[tail]) break;
+      flags[tail--] = 1;
+      if (j >= 0 && at(j) === EMPTY) break;
+    }
   }
 
   lineValues(n, isRow) {
@@ -157,6 +222,8 @@ export class Game {
     for (let n = 0; n < this.size; n++) {
       this.rowDone[n] = this.lineSatisfied(n, true) ? 1 : 0;
       this.colDone[n] = this.lineSatisfied(n, false) ? 1 : 0;
+      this.clueProgress(n, true);
+      this.clueProgress(n, false);
     }
   }
 

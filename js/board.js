@@ -18,6 +18,8 @@ export class BoardView {
     this.cellEls = [];
     this.rowClueEls = [];
     this.colClueEls = [];
+    this.rowClueSpans = [];
+    this.colClueSpans = [];
     this.build();
     this.unsub = game.on((e) => this.onGameEvent(e));
     this.onResize = () => this.layout();
@@ -47,6 +49,7 @@ export class BoardView {
       el.innerHTML = game.puzzle.cols[c].map((n) => `<span>${n}</span>`).join('');
       cclues.appendChild(el);
       this.colClueEls.push(el);
+      this.colClueSpans.push([...el.children]);
     }
 
     const rclues = document.createElement('div');
@@ -57,6 +60,7 @@ export class BoardView {
       el.innerHTML = game.puzzle.rows[r].map((n) => `<span>${n}</span>`).join('');
       rclues.appendChild(el);
       this.rowClueEls.push(el);
+      this.rowClueSpans.push([...el.children]);
     }
 
     const cells = document.createElement('div');
@@ -137,8 +141,19 @@ export class BoardView {
 
   refresh() {
     for (let i = 0; i < this.cellEls.length; i++) this.paintCell(i);
-    for (let r = 0; r < this.size; r++) this.rowClueEls[r].classList.toggle('done', !!this.game.rowDone[r]);
-    for (let c = 0; c < this.size; c++) this.colClueEls[c].classList.toggle('done', !!this.game.colDone[c]);
+    for (let n = 0; n < this.size; n++) {
+      this.paintClue(n, true);
+      this.paintClue(n, false);
+    }
+  }
+
+  paintClue(n, isRow) {
+    const el = isRow ? this.rowClueEls[n] : this.colClueEls[n];
+    const spans = isRow ? this.rowClueSpans[n] : this.colClueSpans[n];
+    const flags = isRow ? this.game.rowClueDone[n] : this.game.colClueDone[n];
+    const lineDone = isRow ? this.game.rowDone[n] : this.game.colDone[n];
+    el.classList.toggle('done', !!lineDone);
+    for (let k = 0; k < spans.length; k++) spans[k].classList.toggle('off', !!flags[k]);
   }
 
   paintCell(i) {
@@ -157,9 +172,7 @@ export class BoardView {
         lines.add('c' + (rec.i % this.size));
       }
       for (const key of lines) {
-        const n = Number(key.slice(1));
-        if (key[0] === 'r') this.rowClueEls[n].classList.toggle('done', !!this.game.rowDone[n]);
-        else this.colClueEls[n].classList.toggle('done', !!this.game.colDone[n]);
+        this.paintClue(Number(key.slice(1)), key[0] === 'r');
       }
     } else if (e.type === 'mistake') {
       const el = this.cellEls[e.index];
@@ -210,7 +223,17 @@ export class BoardView {
     let paint;
     if (mode === 'fill') paint = cur === FILL ? EMPTY : FILL;
     else paint = cur === CROSS ? EMPTY : CROSS;
-    this.stroke = { paint, startR: p.r, startC: p.c, lastR: p.r, lastC: p.c, axis: null, records: [] };
+    this.stroke = {
+      paint,
+      startR: p.r,
+      startC: p.c,
+      lastR: p.r,
+      lastC: p.c,
+      axis: null,
+      records: [],
+      first: true,   // only the cell you deliberately pressed can cost a life
+      halted: false, // a drag stops dead at the first cell it may not paint
+    };
     this.apply(p.r, p.c);
     this.setCrosshair(p.r, p.c);
   }
@@ -253,9 +276,16 @@ export class BoardView {
   }
 
   apply(r, c) {
+    const s = this.stroke;
+    if (s.halted) return;
     const i = r * this.size + c;
-    const rec = this.game.set(i, this.stroke.paint);
-    if (rec) this.stroke.records.push(rec);
+    const rec = this.game.set(i, s.paint, { penalize: s.first });
+    s.first = false;
+    if (rec && rec.blocked) {
+      s.halted = true;
+      return;
+    }
+    if (rec) s.records.push(rec);
   }
 
   onUp(e) {

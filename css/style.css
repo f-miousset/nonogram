@@ -280,6 +280,8 @@ header.bar {
 }
 .clue.sep { box-shadow: inset 2px 0 0 -1px var(--line-strong); }
 .b-rclues .clue.sep { box-shadow: inset 0 2px 0 -1px var(--line-strong); }
+.clue span { transition: opacity 0.15s ease, color 0.15s ease; }
+.clue span.off { color: var(--muted); opacity: 0.38; }
 .clue.done { color: var(--muted); opacity: 0.45; }
 
 .b-cells {
