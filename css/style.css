@@ -323,11 +323,16 @@ header.bar {
 }
 .cell.cross::after { transform: translate(-50%, -50%) rotate(-45deg); }
 .cell.wrong { animation: wrong 0.45s ease; }
+.cell.blocked { animation: blocked 0.35s ease; }
 .cell.hinted { animation: hinted 0.7s ease; }
 @keyframes wrong {
   0%, 100% { box-shadow: none; }
   20% { box-shadow: inset 0 0 0 99px color-mix(in srgb, var(--danger) 55%, transparent); }
   60% { box-shadow: inset 0 0 0 99px color-mix(in srgb, var(--danger) 25%, transparent); }
+}
+@keyframes blocked {
+  0% { box-shadow: inset 0 0 0 99px color-mix(in srgb, var(--line-strong) 45%, transparent); }
+  100% { box-shadow: none; }
 }
 @keyframes hinted {
   0% { box-shadow: inset 0 0 0 99px color-mix(in srgb, var(--primary) 60%, transparent); }

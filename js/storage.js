@@ -5,7 +5,7 @@ const KEY = 'nonogram.v1';
 const DEFAULT_SETTINGS = {
   strict: true,          // mistakes are punished, filled cells are always correct
   lives: 3,              // 0 = unlimited
-  forgivingDrags: true,  // only the cell a stroke starts on can cost a life
+  forgivingDrags: false, // true: a drag onto a wrong cell stops for free instead of costing a life
   autoCross: true,       // auto-cross a line once its clues are satisfied
   crosshair: true,       // highlight the active row/column
   theme: 'auto',         // auto | light | dark

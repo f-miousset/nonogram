@@ -233,7 +233,7 @@ function screenHelp() {
         <ul>
           <li>Tap a cell to fill it. Drag to paint a whole run.</li>
           <li>Switch the toolbar toggle to <b>✕</b> to mark cells you know are empty. On a desktop, right-click does the same thing.</li>
-          <li>Drags lock to a single row or column, so long runs stay straight. Only the cell you press down on can cost a life — if the drag runs past where it should stop, it simply stops, no penalty.</li>
+          <li>Drags lock to a single row or column, so long runs stay straight. A wrong mark always ends the drag on the spot, so one clumsy sweep can cost a life, never three. Turn on <b>forgiving drags</b> in settings and a drag that runs onto a wrong cell stops for free instead.</li>
           <li>Tapping a mark you already made removes it. Dragging from one keeps painting instead, so you can carry on from where you left off.</li>
           <li>A cell you have crossed acts as a wall: colouring over it never costs a life, it just halts the stroke. Tap the cross away first if you want the cell back.</li>
           <li>Clue numbers grey out one by one as you pin their block down from either end of the line.</li>
@@ -276,7 +276,7 @@ function screenSettings() {
         ${choice('lives', 'Lives', 'How many wrong marks a puzzle survives', [
           [1, 'One'], [3, 'Three'], [5, 'Five'], [0, 'Unlimited'],
         ])}
-        ${toggle('forgivingDrags', 'Forgiving drags', 'A drag that runs too far just stops, instead of costing a life')}
+        ${toggle('forgivingDrags', 'Forgiving drags', 'A drag that runs onto a wrong cell stops there for free. Off: it stops and costs a life')}
         ${toggle('autoCross', 'Auto-cross finished lines', 'Cross off the rest of a line once its clues are met')}
         ${toggle('crosshair', 'Row & column highlight', 'Highlight the line you are pointing at')}
         ${choice('theme', 'Theme', 'Follows your system by default', [

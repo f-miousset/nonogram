@@ -305,6 +305,14 @@ export class BoardView {
     s.first = true;
   }
 
+  /** A neutral pulse on the cell a forgiven drag stopped at. */
+  flashBlocked(i) {
+    const el = this.cellEls[i];
+    el.classList.remove('blocked');
+    void el.offsetWidth;
+    el.classList.add('blocked');
+  }
+
   apply(r, c) {
     const s = this.stroke;
     if (s.halted) return;
@@ -317,10 +325,16 @@ export class BoardView {
     if (rec.blocked) {
       // Starting a stroke on top of a cross should not swallow the whole drag —
       // glide off it. Running into one part-way through does stop the run.
-      if (!(rec.wall && s.records.length === 0)) s.halted = true;
+      if (!(rec.wall && s.records.length === 0)) {
+        s.halted = true;
+        this.flashBlocked(i); // say why the drag died, even when it costs nothing
+      }
       return;
     }
     s.records.push(rec);
+    // A wrong mark always ends the stroke: one clumsy sweep can cost a life,
+    // never three.
+    if (rec.mistake) s.halted = true;
   }
 
   onUp(e) {
